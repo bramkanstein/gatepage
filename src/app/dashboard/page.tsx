@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, BarChart2, Users, ExternalLink } from 'lucide-react'
+import { Plus, BarChart2, Users, ExternalLink, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 
@@ -19,6 +19,7 @@ interface Campaign {
 export default function DashboardPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState<string | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -60,6 +61,51 @@ export default function DashboardPage() {
 
     fetchCampaigns()
   }, [])
+
+  const handleExportLeads = async (campaignId: string, title: string) => {
+    setIsExporting(campaignId)
+    try {
+      const { data: leads, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('campaign_id', campaignId)
+
+      if (error) throw error
+
+      if (!leads || leads.length === 0) {
+        alert('No leads to export for this campaign.')
+        return
+      }
+
+      // Convert to CSV
+      const headers = ['Email', 'Status', 'Created At', 'Task Progress']
+      const csvContent = [
+        headers.join(','),
+        ...leads.map(lead => [
+          lead.email || 'Anonymous',
+          lead.status,
+          new Date(lead.created_at).toLocaleString(),
+          JSON.stringify(lead.task_progress).replace(/,/g, ';') // Escape commas in JSON
+        ].join(','))
+      ].join('\n')
+
+      // Trigger Download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.setAttribute('href', url)
+      link.setAttribute('download', `leads_${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+    } catch (error: any) {
+      console.error('Export failed:', error)
+      alert('Failed to export leads: ' + error.message)
+    } finally {
+      setIsExporting(null)
+    }
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -132,7 +178,23 @@ export default function DashboardPage() {
                   <div className="text-2xl font-bold text-gray-900">-</div>
                   <div className="text-xs text-gray-500 uppercase tracking-wide font-medium">Views</div>
                 </div>
-                <div>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-gray-600 hover:text-gray-900"
+                    onClick={() => handleExportLeads(campaign.id, campaign.title)}
+                    disabled={isExporting === campaign.id || campaign.leads_count === 0}
+                  >
+                    {isExporting === campaign.id ? (
+                       <span className="animate-pulse">Exporting...</span>
+                    ) : (
+                       <>
+                         <Download size={14} className="mr-2" />
+                         CSV
+                       </>
+                    )}
+                  </Button>
                   <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">
                     Edit
                   </Button>
