@@ -1,8 +1,14 @@
 import React from 'react'
-import { Plus, Trash2, Mail, Twitter, Youtube, Linkedin } from 'lucide-react'
+import { Plus, Trash2, Mail, Twitter, Youtube, Linkedin, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface ActionsStepProps {
   formData: any
@@ -119,7 +125,29 @@ export default function ActionsStep({ formData, updateFormData }: ActionsStepPro
                 )}
                 {task.type === 'yt_subscribe' && (
                    <div className="grid gap-1">
-                     <Label className="text-xs">Channel ID</Label>
+                     <div className="flex items-center gap-2">
+                       <Label className="text-xs">Channel ID</Label>
+                       <TooltipProvider>
+                         <Tooltip>
+                           <TooltipTrigger asChild>
+                             <HelpCircle size={14} className="text-gray-400 hover:text-gray-600 cursor-pointer" />
+                           </TooltipTrigger>
+                           <TooltipContent>
+                             <p className="max-w-xs">
+                               This is NOT your username. It starts with "UC". 
+                               <a 
+                                 href="https://www.youtube.com/account_advanced" 
+                                 target="_blank" 
+                                 rel="noreferrer"
+                                 className="underline text-blue-400 ml-1"
+                               >
+                                 Find it here
+                               </a>
+                             </p>
+                           </TooltipContent>
+                         </Tooltip>
+                       </TooltipProvider>
+                     </div>
                      <Input 
                        value={task.config.channelId}
                        onChange={(e) => updateTaskConfig(task.id, 'channelId', e.target.value)}
