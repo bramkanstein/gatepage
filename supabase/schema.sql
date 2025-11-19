@@ -94,6 +94,17 @@ create policy "Creators can view leads for their campaigns" on public.leads
 create policy "Anyone can insert leads" on public.leads
   for insert with check (true);
 
+-- STORAGE POLICIES (For 'campaign_files' bucket)
+-- Note: You must create the 'campaign_files' bucket in the Supabase Dashboard first!
+-- Policy: Anyone can read (public), Authenticated users can upload
+create policy "Public Access"
+  on storage.objects for select
+  using ( bucket_id = 'campaign_files' );
+
+create policy "Authenticated Upload"
+  on storage.objects for insert
+  with check ( bucket_id = 'campaign_files' and auth.role() = 'authenticated' );
+
 -- Trigger to create public.users on auth signup
 create or replace function public.handle_new_user()
 returns trigger as $$
@@ -108,3 +119,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- MIGRATION: User Settings (Run this if you already have the table)
+alter table public.users add column if not exists default_x_handle text;
+alter table public.users add column if not exists default_yt_channel_id text;

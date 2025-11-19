@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { LayoutDashboard, PlusCircle, LogOut, Sparkles, Loader2 } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, LogOut, Sparkles, Loader2, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -94,6 +94,13 @@ export default function DashboardLayout({
           >
             <PlusCircle size={18} />
             New Campaign
+          </Link>
+          <Link 
+            href="/dashboard/settings" 
+            className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50 hover:text-blue-600"
+          >
+            <Settings size={18} />
+            Settings
           </Link>
         </nav>
 

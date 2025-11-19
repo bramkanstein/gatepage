@@ -12,12 +12,22 @@ export async function POST(request: Request) {
       )
     }
 
-    // LinkedIn API is restrictive for checking "Did I share X URL?".
-    // It requires 'r_member_social' scope and iterating through recent shares.
-    
-    // For MVP, we will perform a "Soft Check":
-    // If we have a valid access token, we assume they went through the flow.
-    // Alternatively, we can check /v2/me to ensure the token is valid.
+    // ------------------------------------------------------------------
+    // STRICT VERIFICATION PLAN (Future Implementation)
+    // ------------------------------------------------------------------
+    // To verify a "Share":
+    // 1. Requires `w_member_social` (to share) or `r_member_social` (to read shares).
+    // 2. LinkedIn API V2 is restrictive. You usually cannot query "Did user X share URL Y?".
+    // 3. Workaround: You must use the API to *perform* the share on their behalf.
+    //    - POST /v2/ugcPosts (Create a share)
+    //    This ensures it happened because WE did it.
+    // ------------------------------------------------------------------
+
+    // ------------------------------------------------------------------
+    // MVP / SOFT VERIFICATION (Current Implementation)
+    // ------------------------------------------------------------------
+    // We assume "Intent Check". If they connected their LinkedIn, we trust they clicked share.
+    // This is the standard behavior for many "Share to Unlock" tools due to API limits.
 
     const response = await fetch('https://api.linkedin.com/v2/me', {
       headers: {
@@ -27,14 +37,11 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
        return NextResponse.json(
-        { error: 'Invalid LinkedIn session' },
+        { error: 'Invalid LinkedIn session. Please reconnect.' },
         { status: 401 }
       )
     }
 
-    // If token is valid, we return success for now.
-    // TODO: Implement stricter check if LinkedIn API permits.
-    
     return NextResponse.json({ success: true, message: 'LinkedIn task verified' })
 
   } catch (error: any) {
@@ -45,4 +52,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

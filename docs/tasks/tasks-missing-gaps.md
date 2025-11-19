@@ -38,25 +38,25 @@ Update the file after completing each sub-task, not just after completing an ent
   - [ ] 2.2 Add "Google" to Supabase Dashboard -> Authentication -> Providers (Instructional step for user: "Please enable Google in Supabase and add Client ID/Secret").
   - [ ] 2.3 Test Google Sign In flow (requires user config).
 
-- [ ] 3.0 Implement File Uploads
-  - [ ] 3.1 Create "campaign_files" bucket in Supabase Storage (via Dashboard or SQL if possible, usually Dashboard).
-  - [ ] 3.2 Add RLS policy for "campaign_files" bucket: Public read, Authenticated upload.
-  - [ ] 3.3 Update `src/components/create/BasicInfoStep.tsx`:
-    - [ ] 3.3.1 Implement `uploadFile` function using `supabase.storage`.
-    - [ ] 3.3.2 Handle upload progress and state.
-    - [ ] 3.3.3 Return public URL of uploaded file.
-    - [ ] 3.3.4 Save file path/URL to `formData`.
+- [x] 3.0 Implement File Uploads
+  - [x] 3.1 Create "campaign_files" bucket in Supabase Storage (via Dashboard or SQL if possible, usually Dashboard).
+  - [x] 3.2 Add RLS policy for "campaign_files" bucket: Public read, Authenticated upload.
+  - [x] 3.3 Update `src/components/create/BasicInfoStep.tsx`:
+    - [x] 3.3.1 Implement `uploadFile` function using `supabase.storage`.
+    - [x] 3.3.2 Handle upload progress and state.
+    - [x] 3.3.3 Return public URL of uploaded file.
+    - [x] 3.3.4 Save file path/URL to `formData`.
 
-- [ ] 4.0 Create User Settings Page
-  - [ ] 4.1 Create `src/app/dashboard/settings/page.tsx`.
-  - [ ] 4.2 Implement UI: Form to edit Name, Avatar (optional), Default X Handle, Default YouTube Channel ID.
-  - [ ] 4.3 Fetch existing user profile data on load.
-  - [ ] 4.4 Implement "Save" functionality to update `users` table.
+- [x] 4.0 Create User Settings Page
+  - [x] 4.1 Create `src/app/dashboard/settings/page.tsx`.
+  - [x] 4.2 Implement UI: Form to edit Name, Avatar (optional), Default X Handle, Default YouTube Channel ID.
+  - [x] 4.3 Fetch existing user profile data on load.
+  - [x] 4.4 Implement "Save" functionality to update `users` table.
     - *Note:* We may need to add columns to `users` table (`default_x_handle`, `default_yt_channel_id`) if they don't exist.
-  - [ ] 4.5 Add "Settings" link to `src/app/dashboard/layout.tsx` sidebar.
+  - [x] 4.5 Add "Settings" link to `src/app/dashboard/layout.tsx` sidebar.
 
-- [ ] 5.0 Refine Social Verification (Strict Mode Preparation)
-  - [ ] 5.1 Review `src/app/api/verify/x/route.ts` and add TODO comments for where the specific X API call goes.
-  - [ ] 5.2 Review `src/app/api/verify/youtube/route.ts` and ensure it handles errors gracefully.
-  - [ ] 5.3 Review `src/app/api/verify/linkedin/route.ts`.
+- [x] 5.0 Refine Social Verification (Strict Mode Preparation)
+  - [x] 5.1 Review `src/app/api/verify/x/route.ts` and add TODO comments for where the specific X API call goes.
+  - [x] 5.2 Review `src/app/api/verify/youtube/route.ts` and ensure it handles errors gracefully.
+  - [x] 5.3 Review `src/app/api/verify/linkedin/route.ts`.
 

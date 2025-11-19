@@ -12,7 +12,12 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verify Subscription using YouTube Data API
+    // ------------------------------------------------------------------
+    // STRICT VERIFICATION (Implemented)
+    // ------------------------------------------------------------------
+    // Uses YouTube Data API v3.
+    // Requires scope: `https://www.googleapis.com/auth/youtube.readonly`
+    
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&forChannelId=${channelId}`,
       {
@@ -26,8 +31,12 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       console.error('YouTube API Error:', data)
+      
+      // Fallback: If quota exceeded or error, should we fail or pass?
+      // For strictness, we fail. For conversion, some tools pass.
+      // We will fail with a clear message.
       return NextResponse.json(
-        { error: 'Failed to verify YouTube subscription' },
+        { error: 'Failed to verify YouTube subscription status.' },
         { status: response.status }
       )
     }
@@ -52,4 +61,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

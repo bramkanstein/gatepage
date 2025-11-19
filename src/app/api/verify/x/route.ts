@@ -11,20 +11,40 @@ export async function POST(request: Request) {
       )
     }
 
-    // NOTE: Real X API verification requires Basic Tier ($100/mo) for some endpoints.
-    // For MVP/Free Tier, we often just check if the user successfully logged in (accessToken exists).
-    // Below is the logic for "Strict" verification if keys/tier allow.
+    // ------------------------------------------------------------------
+    // STRICT VERIFICATION PLAN (Future Implementation)
+    // ------------------------------------------------------------------
+    // To enable strict verification (actually checking if they followed/liked):
+    // 1. Upgrade X API to Basic Tier ($100/mo) or Pro.
+    // 2. Request scopes: `users.read`, `tweet.read`, `follows.read`, `like.read`.
+    // 3. Use endpoints:
+    //    - Follow: GET /2/users/:id/following (Check if target_id is in list)
+    //    - Like: GET /2/users/:id/liked_tweets (Check if tweet_id is in list)
+    //    - Repost: GET /2/users/:id/retweets (Check if tweet_id is in list)
+    // ------------------------------------------------------------------
 
-    // If strict verification is disabled or keys missing, return success (Ownership Check)
-    // For this MVP, we assume "Ownership Check" (just having the token means they authenticated).
+    // ------------------------------------------------------------------
+    // MVP / SOFT VERIFICATION (Current Implementation)
+    // ------------------------------------------------------------------
+    // We assume "Ownership Check". If the user successfully authenticated
+    // via OAuth and provided a valid token, we count the task as done.
+    // This is a common pattern for free tools to avoid high API costs.
     
-    // TODO: Implement actual X API calls when keys/tier are confirmed.
-    // Example for Follow check:
-    // const res = await fetch(`https://api.twitter.com/2/users/${me}/following`, { ... })
+    // Validate the token works (optional but recommended)
+    const meRes = await fetch('https://api.twitter.com/2/users/me', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    })
+    
+    if (!meRes.ok) {
+      // Token is invalid or expired
+      return NextResponse.json(
+        { error: 'Invalid X session. Please reconnect.' },
+        { status: 401 }
+      )
+    }
 
-    console.log(`Verifying X task: ${taskType} for config:`, taskConfig)
+    console.log(`[Soft Verify] X task: ${taskType} verified for config:`, taskConfig)
 
-    // Mock success for now
     return NextResponse.json({ success: true, message: 'X task verified' })
 
   } catch (error: any) {
@@ -35,4 +55,3 @@ export async function POST(request: Request) {
     )
   }
 }
-
