@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react'
 import { ChevronRight, Check, Layout, ListTodo, Gift } from 'lucide-react'
 import { useRouter } from 'next/navigation'

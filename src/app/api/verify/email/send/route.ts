@@ -2,10 +2,18 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(request: Request) {
   try {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      console.error('RESEND_API_KEY is not defined')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
+    const resend = new Resend(apiKey)
     const { email, campaignId, taskId } = await request.json()
 
     if (!email || !campaignId || !taskId) {
