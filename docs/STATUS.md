@@ -41,42 +41,42 @@
 ## 🚧 In Progress / Next Steps
 
 ### Priority 1: Database & Backend Connection
-1. **Run Supabase Schema**
+1. **Run Supabase Schema** (Completed)
    - Go to Supabase Dashboard → SQL Editor
    - Copy/paste contents of `supabase/schema.sql`
    - Execute to create tables (users, campaigns, tasks, leads)
 
-2. **Get Supabase Anon Key**
+2. **Get Supabase Anon Key** (Completed)
    - Supabase Dashboard → Project Settings → API
    - Copy `anon` `public` key
    - Add to Vercel Environment Variables as `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-3. **Wire Up Campaign Wizard**
+3. **Wire Up Campaign Wizard** (Completed)
    - Connect "Publish Campaign" button to Supabase insert
    - Save campaign + tasks to database
    - File: `src/app/dashboard/create/page.tsx` (line ~40, `handleSubmit`)
 
 ### Priority 2: Task Verification APIs
-1. **Email Verification** (`/api/verify/email`)
+1. **Email Verification** (`/api/verify/email`) (Completed)
    - `POST /api/verify/email/send` - Send PIN via Resend
    - `POST /api/verify/email/check` - Validate PIN
-   - Files to create: `src/app/api/verify/email/route.ts`
+   - Files created: `src/app/api/verify/email/send/route.ts`, `src/app/api/verify/email/check/route.ts`
 
-2. **X (Twitter) Verification** (`/api/verify/x`)
+2. **X (Twitter) Verification** (`/api/verify/x`) (Implemented Mock/API Structure)
    - OAuth flow initiation
    - Callback handler
    - Verify follow/repost/like via X API
-   - Files to create: `src/app/api/verify/x/route.ts`
+   - Files created: `src/app/api/verify/x/route.ts`
 
-3. **YouTube Verification** (`/api/verify/youtube`)
+3. **YouTube Verification** (`/api/verify/youtube`) (Implemented API Structure)
    - OAuth flow (Google)
    - Verify subscription status
-   - Files to create: `src/app/api/verify/youtube/route.ts`
+   - Files created: `src/app/api/verify/youtube/route.ts`
 
-4. **LinkedIn Verification** (`/api/verify/linkedin`)
+4. **LinkedIn Verification** (`/api/verify/linkedin`) (Implemented API Structure)
    - OAuth flow
    - Verify share activity
-   - Files to create: `src/app/api/verify/linkedin/route.ts`
+   - Files created: `src/app/api/verify/linkedin/route.ts`
 
 ### Priority 3: Dashboard & Analytics
 1. **Dashboard Page** (`src/app/dashboard/page.tsx`)

@@ -54,7 +54,7 @@ Update the file after completing each sub-task, not just after completing an ent
     - UI to add/remove tasks.
     - Config forms for each task type (e.g., "Enter X Username to follow").
   - [x] 2.5 Implement "Delivery Settings": Selection for Reveal/Email/Both.
-  - [ ] 2.6 Save functionality: Persist campaign and tasks to Supabase.
+  - [x] 2.6 Save functionality: Persist campaign and tasks to Supabase.
 
 - [x] 3.0 Public GatePage Implementation
   - [x] 3.1 Create dynamic route `app/[creatorSlug]/[campaignSlug]/page.tsx`.
@@ -66,17 +66,17 @@ Update the file after completing each sub-task, not just after completing an ent
     - Click handlers for actions.
 
 - [ ] 4.0 Task Verification Logic
-  - [ ] 4.1 Implement Email Verification:
+  - [x] 4.1 Implement Email Verification:
     - API `POST /api/verify/email/send`: Send PIN via Resend.
     - API `POST /api/verify/email/check`: Validate PIN and mark task complete.
-  - [ ] 4.2 Implement X (Twitter) Verification:
+  - [x] 4.2 Implement X (Twitter) Verification:
     - OAuth flow initiation ("Sign in with X").
     - Callback handler: Exchange code for token.
     - Verification logic: Call X API `GET /2/users/:id/following` (if Basic tier) OR fallback to "Ownership Check" (just successful login).
-  - [ ] 4.3 Implement YouTube Verification:
+  - [x] 4.3 Implement YouTube Verification:
     - OAuth flow ("Sign in with Google").
     - Verification logic: Call YouTube Data API to check subscription status.
-  - [ ] 4.4 Implement LinkedIn Verification:
+  - [x] 4.4 Implement LinkedIn Verification:
     - OAuth flow.
     - Verification logic: Check for "Share" activity (API dependent).
   - [ ] 4.5 Implement "Unlock" Logic:

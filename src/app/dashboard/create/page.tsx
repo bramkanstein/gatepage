@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { ChevronRight, Check, Layout, ListTodo, Gift } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
 
 // Placeholder components for steps
 import BasicInfoStep from '@/components/create/BasicInfoStep'
@@ -14,6 +16,8 @@ const STEPS = [
 ]
 
 export default function CreateCampaignPage() {
+  const router = useRouter()
+  const supabase = createClient()
   const [currentStep, setCurrentStep] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -43,9 +47,64 @@ export default function CreateCampaignPage() {
 
   const handleSubmit = async () => {
     setIsLoading(true)
-    console.log('Submitting Campaign:', formData)
-    // TODO: Call Supabase Insert
-    setTimeout(() => setIsLoading(false), 1000)
+    
+    try {
+      // 1. Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('User not found', userError)
+        alert('You must be logged in to publish a campaign')
+        setIsLoading(false)
+        return
+      }
+
+      // 2. Insert Campaign
+      const { data: campaign, error: campaignError } = await supabase
+        .from('campaigns')
+        .insert({
+          creator_id: user.id,
+          title: formData.title,
+          slug: formData.slug,
+          description: formData.description,
+          destination_url: formData.destinationUrl,
+          delivery_method: formData.deliveryMethod,
+          status: 'active', // Default to active for now
+        })
+        .select()
+        .single()
+
+      if (campaignError) {
+        throw campaignError
+      }
+
+      // 3. Insert Tasks
+      if (formData.tasks.length > 0) {
+        const tasksToInsert = formData.tasks.map((task: any, index: number) => ({
+          campaign_id: campaign.id,
+          type: task.type,
+          config: task.config,
+          order_index: index
+        }))
+
+        const { error: tasksError } = await supabase
+          .from('tasks')
+          .insert(tasksToInsert)
+
+        if (tasksError) {
+          throw tasksError
+        }
+      }
+
+      // Success! Redirect
+      router.push('/dashboard')
+
+    } catch (error: any) {
+      console.error('Error publishing campaign:', error)
+      alert(`Error: ${error.message || 'Failed to create campaign'}`)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const updateFormData = (data: Partial<typeof formData>) => {

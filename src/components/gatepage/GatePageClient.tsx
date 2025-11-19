@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { CheckCircle2, Circle, Loader2, Mail, Twitter, Youtube, Linkedin, Lock, Unlock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 interface Task {
   id: string
@@ -46,6 +47,13 @@ export default function GatePageClient({ campaign }: GatePageClientProps) {
   const [tasks, setTasks] = useState<Task[]>(campaign.tasks || [])
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [guestId, setGuestId] = useState<string | null>(null)
+  
+  // Email Verification State
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const [emailStep, setEmailStep] = useState<'input' | 'verify'>('input')
+  const [email, setEmail] = useState('')
+  const [otp, setOtp] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
 
   // Load guest session from localStorage
   useEffect(() => {
@@ -90,22 +98,92 @@ export default function GatePageClient({ campaign }: GatePageClientProps) {
   const handleTaskClick = async (task: Task) => {
     if (task.status === 'completed') return
 
+    // Handle Email Task
+    if (task.type === 'email') {
+      if (activeTaskId === task.id) {
+        setActiveTaskId(null) // Toggle off
+      } else {
+        setActiveTaskId(task.id)
+        setEmailStep('input')
+        setEmail('')
+        setOtp('')
+      }
+      return
+    }
+
+    // Handle OAuth Tasks (Placeholder for X, YT, LinkedIn)
+    // TODO: Implement OAuth flow using Supabase Auth or custom flow
+    alert('Social verification requires OAuth configuration. Please complete Email tasks first.')
+    
+    /* 
+    // Logic when OAuth is ready:
     // Update task to loading
     const updatedTasks = tasks.map(t => 
       t.id === task.id ? { ...t, status: 'loading' as const } : t
     )
     setTasks(updatedTasks)
     saveProgress(updatedTasks, false)
+    */
+  }
 
-    // TODO: Call verification API based on task type
-    // For now, simulate completion after 2 seconds
-    setTimeout(() => {
-      const completedTasks = updatedTasks.map(t => 
-        t.id === task.id ? { ...t, status: 'completed' as const } : t
+  const handleEmailSubmit = async (taskId: string) => {
+    if (!email) return
+    setIsVerifying(true)
+
+    try {
+      const res = await fetch('/api/verify/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          campaignId: campaign.id,
+          taskId
+        })
+      })
+      
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      setEmailStep('verify')
+    } catch (error: any) {
+      alert(error.message || 'Failed to send code')
+    } finally {
+      setIsVerifying(false)
+    }
+  }
+
+  const handleOtpSubmit = async (taskId: string) => {
+    if (!otp) return
+    setIsVerifying(true)
+
+    try {
+      const res = await fetch('/api/verify/email/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          code: otp,
+          campaignId: campaign.id,
+          taskId
+        })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      // Success
+      const updatedTasks = tasks.map(t => 
+        t.id === taskId ? { ...t, status: 'completed' as const } : t
       )
-      setTasks(completedTasks)
-      saveProgress(completedTasks, false)
-    }, 2000)
+      setTasks(updatedTasks)
+      saveProgress(updatedTasks, false) // Check unlock happens in useEffect
+      setActiveTaskId(null)
+
+    } catch (error: any) {
+      alert(error.message || 'Verification failed')
+    } finally {
+      setIsVerifying(false)
+    }
   }
 
   const handleUnlock = () => {
@@ -145,39 +223,102 @@ export default function GatePageClient({ campaign }: GatePageClientProps) {
               const label = TASK_LABELS[task.type] || task.type
               const isCompleted = task.status === 'completed'
               const isLoading = task.status === 'loading'
+              const isActive = activeTaskId === task.id
 
               return (
-                <button
-                  key={task.id}
-                  onClick={() => handleTaskClick(task)}
-                  disabled={isCompleted || isLoading}
-                  className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all ${
-                    isCompleted
-                      ? 'border-green-200 bg-green-50 cursor-default'
-                      : isLoading
-                      ? 'border-blue-200 bg-blue-50 cursor-wait'
-                      : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
-                  }`}
-                >
-                  <div className="flex-shrink-0">
-                    {isCompleted ? (
-                      <CheckCircle2 className="text-green-600" size={24} />
-                    ) : isLoading ? (
-                      <Loader2 className="text-blue-600 animate-spin" size={24} />
-                    ) : (
-                      <Icon className="text-gray-400" size={24} />
+                <div key={task.id} className="space-y-2">
+                  <button
+                    onClick={() => handleTaskClick(task)}
+                    disabled={isCompleted || isLoading}
+                    className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all ${
+                      isCompleted
+                        ? 'border-green-200 bg-green-50 cursor-default'
+                        : isActive
+                        ? 'border-blue-500 bg-blue-50'
+                        : isLoading
+                        ? 'border-blue-200 bg-blue-50 cursor-wait'
+                        : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
+                    }`}
+                  >
+                    <div className="flex-shrink-0">
+                      {isCompleted ? (
+                        <CheckCircle2 className="text-green-600" size={24} />
+                      ) : isLoading ? (
+                        <Loader2 className="text-blue-600 animate-spin" size={24} />
+                      ) : (
+                        <Icon className={isActive ? "text-blue-600" : "text-gray-400"} size={24} />
+                      )}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="font-medium text-gray-900">{label}</div>
+                      {task.config?.username && (
+                        <div className="text-sm text-gray-500">@{task.config.username}</div>
+                      )}
+                    </div>
+                    {!isCompleted && !isLoading && (
+                      <div className={`text-sm font-medium ${isActive ? 'text-blue-600' : 'text-blue-600'}`}>
+                        {isActive ? 'Close' : 'Start →'}
+                      </div>
                     )}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <div className="font-medium text-gray-900">{label}</div>
-                    {task.config?.username && (
-                      <div className="text-sm text-gray-500">@{task.config.username}</div>
-                    )}
-                  </div>
-                  {!isCompleted && !isLoading && (
-                    <div className="text-sm text-blue-600 font-medium">Start →</div>
+                  </button>
+
+                  {/* Expandable Content for Email Task */}
+                  {isActive && task.type === 'email' && (
+                    <div className="p-4 border border-blue-100 bg-white rounded-lg shadow-sm animate-in slide-in-from-top-2">
+                      {emailStep === 'input' ? (
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-700">Enter your email address</label>
+                            <Input 
+                              type="email" 
+                              placeholder="name@example.com" 
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              disabled={isVerifying}
+                            />
+                          </div>
+                          <Button 
+                            onClick={() => handleEmailSubmit(task.id)}
+                            disabled={!email || isVerifying}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {isVerifying ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+                            Send Verification Code
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-700">Enter the code sent to {email}</label>
+                            <Input 
+                              type="text" 
+                              placeholder="123456" 
+                              value={otp}
+                              onChange={(e) => setOtp(e.target.value)}
+                              disabled={isVerifying}
+                              className="text-center text-lg tracking-widest"
+                              maxLength={6}
+                            />
+                          </div>
+                          <Button 
+                            onClick={() => handleOtpSubmit(task.id)}
+                            disabled={!otp || isVerifying}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {isVerifying ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+                            Verify Code
+                          </Button>
+                          <button 
+                            onClick={() => setEmailStep('input')}
+                            className="w-full text-sm text-gray-500 hover:text-gray-700"
+                          >
+                            Change email
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
-                </button>
+                </div>
               )
             })}
           </div>
