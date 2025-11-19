@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { CheckCircle2, Circle, Loader2, Mail, Twitter, Youtube, Linkedin, Lock, Unlock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { createClient } from '@/lib/supabase/client'
 
 interface Task {
   id: string
@@ -44,6 +45,7 @@ const TASK_LABELS: Record<string, string> = {
 }
 
 export default function GatePageClient({ campaign }: GatePageClientProps) {
+  const supabase = createClient()
   const [tasks, setTasks] = useState<Task[]>(campaign.tasks || [])
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [guestId, setGuestId] = useState<string | null>(null)
@@ -54,6 +56,9 @@ export default function GatePageClient({ campaign }: GatePageClientProps) {
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
+
+  // Social Auth State
+  const [socialUser, setSocialUser] = useState<any>(null)
 
   // Load guest session from localStorage
   useEffect(() => {
@@ -75,6 +80,22 @@ export default function GatePageClient({ campaign }: GatePageClientProps) {
     }
   }, [campaign.id, campaign.tasks])
 
+  // Check for OAuth Callback (Supabase session)
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setSocialUser(session.user)
+        console.log('Social User:', session.user)
+        
+        // If we just came back from auth, try to verify tasks automatically
+        // But wait for tasks to be loaded from local storage first
+      }
+    }
+    checkSession()
+  }, [supabase.auth])
+
+
   // Save progress to localStorage
   const saveProgress = (updatedTasks: Task[], unlocked: boolean) => {
     if (guestId) {
@@ -95,6 +116,63 @@ export default function GatePageClient({ campaign }: GatePageClientProps) {
     }
   }, [tasks, campaign.id, guestId])
 
+  const handleXLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'twitter',
+      options: {
+        scopes: 'tweet.read users.read follows.read',
+        redirectTo: `${window.location.origin}/auth/callback?next=${window.location.pathname}`
+      }
+    })
+    if (error) {
+      alert('Error connecting to X: ' + error.message)
+    }
+  }
+
+  const verifyXTask = async (task: Task) => {
+    if (!socialUser) {
+      handleXLogin()
+      return
+    }
+
+    // Optimistic loading
+    const updatedTasks = tasks.map(t => 
+      t.id === task.id ? { ...t, status: 'loading' as const } : t
+    )
+    setTasks(updatedTasks)
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      const res = await fetch('/api/verify/x', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: session?.provider_token, // Need to ensure we get provider token
+          taskConfig: task.config,
+          taskType: task.type
+        })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      // Success
+      const completedTasks = tasks.map(t => 
+        t.id === task.id ? { ...t, status: 'completed' as const } : t
+      )
+      setTasks(completedTasks)
+      saveProgress(completedTasks, false)
+      setActiveTaskId(null)
+
+    } catch (error: any) {
+      console.error(error)
+      alert('Verification failed: ' + error.message)
+      // Revert loading state
+      setTasks(tasks)
+    }
+  }
+
   const handleTaskClick = async (task: Task) => {
     if (task.status === 'completed') return
 
@@ -111,19 +189,19 @@ export default function GatePageClient({ campaign }: GatePageClientProps) {
       return
     }
 
-    // Handle OAuth Tasks (Placeholder for X, YT, LinkedIn)
+    // Handle X Tasks
+    if (task.type.startsWith('x_')) {
+      if (activeTaskId === task.id) {
+        setActiveTaskId(null)
+      } else {
+        setActiveTaskId(task.id)
+      }
+      return
+    }
+
+    // Handle Other OAuth Tasks (YT, LinkedIn)
     // TODO: Implement OAuth flow using Supabase Auth or custom flow
-    alert('Social verification requires OAuth configuration. Please complete Email tasks first.')
-    
-    /* 
-    // Logic when OAuth is ready:
-    // Update task to loading
-    const updatedTasks = tasks.map(t => 
-      t.id === task.id ? { ...t, status: 'loading' as const } : t
-    )
-    setTasks(updatedTasks)
-    saveProgress(updatedTasks, false)
-    */
+    alert('This verification type requires configuration. Please complete other tasks first.')
   }
 
   const handleEmailSubmit = async (taskId: string) => {
@@ -261,6 +339,39 @@ export default function GatePageClient({ campaign }: GatePageClientProps) {
                       </div>
                     )}
                   </button>
+
+                  {/* Expandable Content for X Task */}
+                  {isActive && task.type.startsWith('x_') && (
+                    <div className="p-4 border border-blue-100 bg-white rounded-lg shadow-sm animate-in slide-in-from-top-2">
+                      {!socialUser ? (
+                        <div className="text-center space-y-3">
+                           <p className="text-sm text-gray-600">Connect your X account to verify this action.</p>
+                           <Button 
+                             onClick={handleXLogin}
+                             className="w-full bg-black hover:bg-gray-800 text-white"
+                           >
+                             <Twitter size={16} className="mr-2" />
+                             Connect X (Twitter)
+                           </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                           <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded border border-green-100">
+                             <CheckCircle2 size={16} />
+                             Connected as {socialUser.user_metadata.user_name || socialUser.email}
+                           </div>
+                           <Button 
+                             onClick={() => verifyXTask(task)}
+                             disabled={task.status === 'loading'}
+                             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                           >
+                             {task.status === 'loading' ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+                             Verify Action
+                           </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Expandable Content for Email Task */}
                   {isActive && task.type === 'email' && (
